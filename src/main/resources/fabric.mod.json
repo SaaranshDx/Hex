@@ -1,0 +1,45 @@
+{
+	"schemaVersion": 1,
+	"id": "hex",
+	"version": "${version}",
+	"name": "Hex",
+	"description": "lightweight cosmetic cape mod for Minecraft",
+	"authors": [
+		"Saaransh_Xd"
+	],
+	"contact": {
+		"homepage": "https://hexcapes.netlify.app",
+		"sources": "https://github.com/SaaranshDx/Hex"
+	},
+	"license": "MIT",
+	"icon": "assets/hex/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			{
+				"value": "hex.capes.Hex",
+				"adapter": "kotlin"
+			}
+		],
+		"client": [
+			{
+				"value": "hex.capes.client.HexClient",
+				"adapter": "kotlin"
+			}
+		]
+	},
+	"mixins": [
+		"hex.mixins.json",
+		{
+			"config": "hex.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.19.2",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*",
+		"fabric-language-kotlin": "*"
+	}
+}
