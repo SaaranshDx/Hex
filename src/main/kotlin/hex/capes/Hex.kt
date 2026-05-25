@@ -21,12 +21,20 @@ object Hex : ModInitializer {
 
 	override fun onInitialize() {
 		logger.info("Hex initialized")
+		// Fetch server configuration asynchronously
+		Thread {
+			HexServers.fetchServerConfig()
+		}.apply {
+			isDaemon = true
+			name = "hex-server-config"
+		}.start()
 	}
 
 	fun fetchUserdata(username: String): ProfileResponse? {
 		try {
+			val serverUrl = HexServers.clientServer.takeIf { it.isNotEmpty() } ?: "http://localhost:8000"
 			val request = HttpRequest.newBuilder()
-				.uri(URI.create("http://localhost:8000/profile/${encodePathSegment(username)}"))
+				.uri(URI.create("$serverUrl/profile/${encodePathSegment(username)}"))
 				.GET()
 				.timeout(Duration.ofSeconds(10))
 				.build()
@@ -71,11 +79,12 @@ object Hex : ModInitializer {
 
 	fun fetchCapeUrls(playerNames: List<String>): Map<String, String?> {
 		return try {
+			val serverUrl = HexServers.clientServer.takeIf { it.isNotEmpty() } ?: "http://localhost:8000"
 			val playersJson = playerNames.joinToString(",") { "\"$it\"" }
 			val requestBody = HttpRequest.BodyPublishers.ofString("[$playersJson]")
 
 			val request = HttpRequest.newBuilder()
-				.uri(URI.create("http://localhost:8000/other"))
+				.uri(URI.create("$serverUrl/other"))
 				.header("Content-Type", "application/json")
 				.POST(requestBody)
 				.timeout(Duration.ofSeconds(10))

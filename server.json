@@ -1,0 +1,7 @@
+{
+	"httpsserver": "https://api.hex.io",
+	"clientserver": "https://client.hex.io",
+	"version-api": "v1",
+	"client-version": "1.0.0",
+	"updaterequired": false
+}
