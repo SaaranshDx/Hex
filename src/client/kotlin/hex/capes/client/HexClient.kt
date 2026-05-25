@@ -24,34 +24,16 @@ object HexClient : ClientModInitializer {
 
 		ClientPlayConnectionEvents.JOIN.register { handler, _, client ->
 			HexCapeTexture.primeKnownPlayers(client, handler.playerList.mapNotNull { it.profile?.name })
-		}
-
-// update checks
-
-	
-
-		ClientPlayConnectionEvents.JOIN.register { handler, _, client ->
-
-			HexCapeTexture.primeKnownPlayers(
-				client,
-				handler.playerList.mapNotNull { it.profile?.name }
-			)
-
 			HexServers.fetchServerConfig()
-
-// check for player registration state
 			HexServers.fetchPlayerRegistrationState(client.player?.name?.string ?: "")
 
 			if (HexServers.updateRequired) {
-
-
 				client.player?.sendMessage(
 					Text.literal("A new Hex update expect broken features or consider updating from https://hexcapes.netlify.app/update")
 						.styled { it.withColor(Formatting.RED) },
 					false
 				)
 			}
-
 
 			if (!HexServers.playerRegistrationState) {
 				client.player?.sendMessage(
@@ -60,16 +42,34 @@ object HexClient : ClientModInitializer {
 					false
 				)
 			}
-
-
 		}
 
 		ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
 			dispatcher.register(
 				ClientCommandManager.literal("reloadcosmetics")
 					.executes { context ->
-						HexCapeTexture.reloadAll()
+						HexServers.reloadAll()
 						context.source.sendFeedback(Text.literal("Reloading cosmetics cache."))
+						1
+					}
+			)
+		}
+
+		ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
+			dispatcher.register(
+				ClientCommandManager.literal("catalogue")
+					.executes { context ->
+						try {
+							HexServers.openCatalogue()
+							context.source.sendFeedback(
+								Text.literal("Opening cosmetics catalogue.")
+							)
+						} catch (e: Exception) {
+							context.source.sendFeedback(
+								Text.literal("Failed to open cosmetics catalogue.")
+							)
+							e.printStackTrace()
+						}
 						1
 					}
 			)

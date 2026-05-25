@@ -83,5 +83,12 @@ fun fetchPlayerRegistrationState(playerName: String) {
     }
 }
 
-
+fun openCatalouge() {
+    try {
+        java.awt.Desktop.getDesktop().browse(
+            URI.create("https://hexcapes.netlify.app/catalogue")
+        )
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
 }
