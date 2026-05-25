@@ -51,4 +51,37 @@ object HexServers {
             e.printStackTrace()
         }
     }
+
+    var playerRegistrationState: Boolean = false
+
+fun fetchPlayerRegistrationState(playerName: String) {
+
+    try {
+
+        val client = HttpClient.newHttpClient()
+
+        val request = HttpRequest.newBuilder()
+            .uri(
+                URI.create(
+                    "$clientServer/registration-state/$playerName"
+                )
+            )
+            .GET()
+            .build()
+
+        val response = client.send(
+            request,
+            HttpResponse.BodyHandlers.ofString()
+        )
+
+        playerRegistrationState =
+            response.body().toBoolean()
+
+    } catch (e: Exception) {
+
+        e.printStackTrace()
+    }
+}
+
+
 }

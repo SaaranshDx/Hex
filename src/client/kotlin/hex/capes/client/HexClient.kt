@@ -2,6 +2,7 @@ package hex.capes.client
 
 import hex.capes.client.render.HexCapeFeatureRenderer
 import hex.capes.client.render.HexCapeTexture
+import hex.capes.HexServers
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
@@ -27,6 +28,8 @@ object HexClient : ClientModInitializer {
 
 // update checks
 
+	
+
 		ClientPlayConnectionEvents.JOIN.register { handler, _, client ->
 
 			HexCapeTexture.primeKnownPlayers(
@@ -36,15 +39,29 @@ object HexClient : ClientModInitializer {
 
 			HexServers.fetchServerConfig()
 
+// check for player registration state
+			HexServers.fetchPlayerRegistrationState(client.player?.name?.string ?: "")
+
 			if (HexServers.updateRequired) {
 
 
 				client.player?.sendMessage(
-					Text.literal("A new Hex update expect broken features or consider updating")
+					Text.literal("A new Hex update expect broken features or consider updating from https://hexcapes.netlify.app/update")
 						.styled { it.withColor(Formatting.RED) },
 					false
 				)
 			}
+
+
+			if (!HexServers.playerRegistrationState) {
+				client.player?.sendMessage(
+					Text.literal("Your account is not registered on the Hex servers any of the cosmetic features won't work register at https://hexcapes.netlify.app/register")
+						.styled { it.withColor(Formatting.YELLOW) },
+					false
+				)
+			}
+
+
 		}
 
 		ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
