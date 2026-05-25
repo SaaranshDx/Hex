@@ -95,6 +95,46 @@ object HexCapeTexture {
         }
     }
 
+    fun syncCapesWithServer(client: MinecraftClient) {
+        val playerList = client.networkHandler
+            ?.playerList
+            ?.map { it.profile.name.lowercase() }
+            ?.filter { it != client.session.username.lowercase() }
+            ?: emptyList()
+
+        if (playerList.isEmpty()) {
+            return
+        }
+
+        executor.execute {
+            try {
+                val capeUrls = Hex.fetchCapeUrls(playerList)
+                
+                for ((playerName, capeUrl) in capeUrls) {
+                    if (capeUrl != null) {
+                        val entry = entries.computeIfAbsent(cacheKey(playerName)) { createEntry(playerName) }
+                        
+                        val imageBytes = Hex.downloadBytes(capeUrl)
+                            ?: readCachedTexture(playerName)
+                            ?: continue
+                        
+                        writeCache(playerName, imageBytes)
+                        registerTexture(client, entry, imageBytes)
+                    } else {
+                        // Skip rendering if URL is null
+                        val cacheKey = cacheKey(playerName)
+                        val entry = entries[cacheKey]
+                        if (entry != null) {
+                            clearTexture(client, entry, playerName)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                logger.warn("Failed to sync capes with server", e)
+            }
+        }
+    }
+
     fun getTextureId(username: String?): Identifier? {
         val normalizedName = username?.trim()?.takeIf { it.isNotEmpty() } ?: return null
 

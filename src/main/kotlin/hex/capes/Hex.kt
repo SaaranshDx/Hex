@@ -69,6 +69,42 @@ object Hex : ModInitializer {
 		}
 	}
 
+	fun fetchCapeUrls(playerNames: List<String>): Map<String, String?> {
+		return try {
+			val playersJson = playerNames.joinToString(",") { "\"$it\"" }
+			val requestBody = HttpRequest.BodyPublishers.ofString("[$playersJson]")
+
+			val request = HttpRequest.newBuilder()
+				.uri(URI.create("http://localhost:8000/other"))
+				.header("Content-Type", "application/json")
+				.POST(requestBody)
+				.timeout(Duration.ofSeconds(10))
+				.build()
+
+			val response = httpClient.send(
+				request,
+				HttpResponse.BodyHandlers.ofString()
+			)
+			if (response.statusCode() !in 200..299) {
+				logger.warn("Failed to fetch cape URLs: HTTP {}", response.statusCode())
+				return emptyMap()
+			}
+
+			val root = JsonParser.parseString(response.body()).asJsonObject
+			val capeUrls = mutableMapOf<String, String?>()
+			
+			for ((playerName, urlElement) in root.entrySet()) {
+				val url = if (urlElement.isJsonNull) null else urlElement.asString
+				capeUrls[playerName.lowercase()] = url
+			}
+			
+			capeUrls
+		} catch (e: Exception) {
+			logger.warn("Failed to fetch cape URLs from server", e)
+			emptyMap()
+		}
+	}
+
 	private fun encodePathSegment(value: String): String {
 		return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20")
 	}

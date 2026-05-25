@@ -25,6 +25,10 @@ class HexCapeFeatureRenderer(
 
     private val capeModel = PlayerCapeModel(rendererContext.entityModels.getModelPart(EntityModelLayers.PLAYER_CAPE))
     private val equipmentModelLoader: EquipmentModelLoader = rendererContext.equipmentModelLoader
+    
+    @Volatile
+    private var lastSyncTime: Long = 0L
+    private val SYNC_INTERVAL_MS = 10_000L // Sync every 10 seconds
 
     override fun render(
         matrices: MatrixStack,
@@ -37,6 +41,9 @@ class HexCapeFeatureRenderer(
         if (state.invisible || !state.capeVisible) {
             return
         }
+
+        // Periodically sync with server to get cape URLs for all players
+        syncWithServerIfNeeded()
 
         val textureId = HexCapeTexture.getTextureId(resolveUsername(state)) ?: return
         if (hasCustomModelForLayer(state.equippedChestStack, EquipmentModel.LayerType.WINGS)) {
@@ -59,6 +66,17 @@ class HexCapeFeatureRenderer(
             null
         )
         matrices.pop()
+    }
+
+    private fun syncWithServerIfNeeded() {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastSyncTime < SYNC_INTERVAL_MS) {
+            return
+        }
+        
+        lastSyncTime = currentTime
+        val client = MinecraftClient.getInstance()
+        HexCapeTexture.syncCapesWithServer(client)
     }
 
     private fun resolveUsername(state: PlayerEntityRenderState): String? {
