@@ -13,6 +13,7 @@ import net.minecraft.client.render.entity.feature.FeatureRendererContext
 import net.minecraft.client.render.entity.model.PlayerEntityModel
 import net.minecraft.client.render.entity.state.PlayerEntityRenderState
 import net.minecraft.text.Text
+import net.minecraft.util.Formatting
 
 object HexClient : ClientModInitializer {
 
@@ -22,6 +23,28 @@ object HexClient : ClientModInitializer {
 
 		ClientPlayConnectionEvents.JOIN.register { handler, _, client ->
 			HexCapeTexture.primeKnownPlayers(client, handler.playerList.mapNotNull { it.profile?.name })
+		}
+
+// update checks
+
+		ClientPlayConnectionEvents.JOIN.register { handler, _, client ->
+
+			HexCapeTexture.primeKnownPlayers(
+				client,
+				handler.playerList.mapNotNull { it.profile?.name }
+			)
+
+			HexServers.fetchServerConfig()
+
+			if (HexServers.updateRequired) {
+
+
+				client.player?.sendMessage(
+					Text.literal("A new Hex update expect broken features or consider updating")
+						.styled { it.withColor(Formatting.RED) },
+					false
+				)
+			}
 		}
 
 		ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
