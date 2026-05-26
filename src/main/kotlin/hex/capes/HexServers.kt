@@ -5,7 +5,7 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-
+import net.minecraft.util.Util
 object HexServers {
 
     var httpsServer: String = ""
@@ -54,41 +54,47 @@ object HexServers {
 
     var playerRegistrationState: Boolean = false
 
-fun fetchPlayerRegistrationState(playerName: String) {
-
-    try {
-
-        val client = HttpClient.newHttpClient()
-
-        val request = HttpRequest.newBuilder()
-            .uri(
-                URI.create(
-                    "$clientServer/registration-state/$playerName"
-                )
-            )
-            .GET()
-            .build()
-
-        val response = client.send(
-            request,
-            HttpResponse.BodyHandlers.ofString()
-        )
-
-        playerRegistrationState =
-            response.body().toBoolean()
-
-    } catch (e: Exception) {
-
-        e.printStackTrace()
+    fun reloadAll() {
+        fetchServerConfig()
+        println("Reloaded all server configs and cache.")
     }
-}
 
-fun openCatalouge() {
-    try {
-        java.awt.Desktop.getDesktop().browse(
-            URI.create("https://hexcapes.netlify.app/catalogue")
-        )
-    } catch (e: Exception) {
-        e.printStackTrace()
+    fun fetchPlayerRegistrationState(playerName: String) {
+
+        try {
+
+            val client = HttpClient.newHttpClient()
+
+            val request = HttpRequest.newBuilder()
+                .uri(
+                    URI.create(
+                        "$clientServer/registration-state/$playerName"
+                    )
+                )
+                .GET()
+                .build()
+
+            val response = client.send(
+                request,
+                HttpResponse.BodyHandlers.ofString()
+            )
+
+            playerRegistrationState =
+                response.body().toBoolean()
+
+        } catch (e: Exception) {
+
+            e.printStackTrace()
+        }
+    }
+
+    fun openCatalogue() {
+        try {
+            Util.getOperatingSystem().open(
+                "https://hexcapes.netlify.app/catalogue"
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }

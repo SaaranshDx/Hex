@@ -3,6 +3,7 @@ package hex.capes.client
 import hex.capes.client.render.HexCapeFeatureRenderer
 import hex.capes.client.render.HexCapeTexture
 import hex.capes.HexServers
+import java.net.URI
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
@@ -13,6 +14,8 @@ import net.minecraft.client.render.entity.PlayerEntityRenderer
 import net.minecraft.client.render.entity.feature.FeatureRendererContext
 import net.minecraft.client.render.entity.model.PlayerEntityModel
 import net.minecraft.client.render.entity.state.PlayerEntityRenderState
+import net.minecraft.text.ClickEvent
+import net.minecraft.text.HoverEvent
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 
@@ -24,25 +27,58 @@ object HexClient : ClientModInitializer {
 
 		ClientPlayConnectionEvents.JOIN.register { handler, _, client ->
 			HexCapeTexture.primeKnownPlayers(client, handler.playerList.mapNotNull { it.profile?.name })
+		}
+
+
+
+	
+
+		ClientPlayConnectionEvents.JOIN.register { handler, _, client ->
+
+			HexCapeTexture.primeKnownPlayers(
+				client,
+				handler.playerList.mapNotNull { it.profile?.name }
+			)
+
 			HexServers.fetchServerConfig()
+
+// check for player registration state
 			HexServers.fetchPlayerRegistrationState(client.player?.name?.string ?: "")
 
 			if (HexServers.updateRequired) {
-				client.player?.sendMessage(
-					Text.literal("A new Hex update expect broken features or consider updating from https://hexcapes.netlify.app/update")
-						.styled { it.withColor(Formatting.RED) },
-					false
-				)
+
+
+			client.player?.sendMessage(
+				Text.literal("A new Hex update expect broken features or consider updating from ")
+					.append(
+						Text.literal("https://hexcapes.netlify.app/update")
+							.styled { it.withColor(Formatting.RED)
+								.withClickEvent(ClickEvent.OpenUrl(URI.create("https://hexcapes.netlify.app/update")))
+								.withHoverEvent(HoverEvent.ShowText(Text.literal("Click to open link"))) }
+					),
+				false
+			)
 			}
 
-			if (!HexServers.playerRegistrationState) {
-				client.player?.sendMessage(
-					Text.literal("Your account is not registered on the Hex servers any of the cosmetic features won't work register at https://hexcapes.netlify.app/register")
-						.styled { it.withColor(Formatting.YELLOW) },
-					false
-				)
-			}
+// update checks
+
+		if (!HexServers.playerRegistrationState) {
+			client.player?.sendMessage(
+				Text.literal("Your account is not registered on the Hex servers any of the cosmetic features won't work register at ")
+					.append(
+						Text.literal("https://hexcapes.netlify.app/register")
+							.styled { it.withColor(Formatting.YELLOW)
+								.withClickEvent(ClickEvent.OpenUrl(URI.create("https://hexcapes.netlify.app/register")))
+								.withHoverEvent(HoverEvent.ShowText(Text.literal("Click to open link"))) }
+					),
+				false
+			)
 		}
+
+
+		}
+
+// reload cache cmd
 
 		ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
 			dispatcher.register(
@@ -56,25 +92,32 @@ object HexClient : ClientModInitializer {
 		}
 
 		ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
+
 			dispatcher.register(
 				ClientCommandManager.literal("catalogue")
 					.executes { context ->
+
 						try {
+
 							HexServers.openCatalogue()
+
 							context.source.sendFeedback(
 								Text.literal("Opening cosmetics catalogue.")
 							)
+
 						} catch (e: Exception) {
+
 							context.source.sendFeedback(
 								Text.literal("Failed to open cosmetics catalogue.")
 							)
+
 							e.printStackTrace()
 						}
+
 						1
 					}
 			)
 		}
-
 		LivingEntityFeatureRendererRegistrationCallback.EVENT.register { _, entityRenderer, registrationHelper, context ->
 			if (entityRenderer is PlayerEntityRenderer<*>) {
 				@Suppress("UNCHECKED_CAST")
