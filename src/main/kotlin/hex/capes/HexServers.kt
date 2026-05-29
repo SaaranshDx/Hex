@@ -1,29 +1,29 @@
 package hex.capes
 
 import com.google.gson.JsonParser
+import net.minecraft.util.Util
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import net.minecraft.util.Util
+import java.time.Duration
 object HexServers {
 
-    var httpsServer: String = ""
+    //var httpsServer: String = ""
     var clientServer: String = ""
     var versionApi: String = ""
-    var clientVersion: String = ""
-    var updateRequired: Boolean = false
+    //var clientVersion: String = ""
+    //var updateRequired: Boolean = false
     var catalogurl: String = ""
 
     fun fetchServerConfig() {
-
         try {
-
             val client = HttpClient.newHttpClient()
 
             val request = HttpRequest.newBuilder()
-                .uri(URI.create("https://raw.githubusercontent.com/SaaranshDx/Hex/refs/heads/main/server.json"))
+                .uri(URI.create("http://localhost:3000/server.json"))
                 .GET()
+                .timeout(Duration.ofSeconds(5))
                 .build()
 
             val response = client.send(
@@ -31,26 +31,19 @@ object HexServers {
                 HttpResponse.BodyHandlers.ofString()
             )
 
-            val json = JsonParser
-                .parseString(response.body())
-                .asJsonObject
+            val json = JsonParser.parseString(response.body()).asJsonObject
 
-            httpsServer = json["httpsserver"].asString
-            clientServer = json["clientserver"].asString
-            versionApi = json["version-api"].asString
-            clientVersion = json["client-version"].asString
-            updateRequired = json["updaterequired"].asBoolean
-            catalogurl = json["catalogurl"].asString
-
-            println("HTTPS Server: $httpsServer")
-            println("Client Server: $clientServer")
-            println("Version API: $versionApi")
-            println("Client Version: $clientVersion")
-            println("Update Required: $updateRequired")
-            println("Catalog URL: $catalogurl")
+            //httpsServer = json["httpsserver"]?.asString ?: ""
+            clientServer = json["serverHost"]?.asString ?: ""
+            versionApi = json["version-api"]?.asString ?: ""
+            //updateRequired = json["updaterequired"]?.asBoolean ?: false
+            catalogurl = json["catalogurl"]?.asString ?: ""
         } catch (e: Exception) {
+            println("Failed to fetch remote config: ${e.message}")
+        }
 
-            e.printStackTrace()
+        if (clientServer.isEmpty()) {
+            clientServer = "http://localhost:8000"
         }
     }
 
@@ -99,6 +92,8 @@ object HexServers {
             e.printStackTrace()
         }
     }
+
+    var clientVersion = "1"
 
     fun isUpdateRequired(): Boolean {
         return versionApi > clientVersion

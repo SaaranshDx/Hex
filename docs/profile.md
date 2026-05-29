@@ -1,6 +1,6 @@
 # GET /profile/:username
 
-Retrieve the active cape URL for a registered user.
+Retrieve the active cape texture information for a registered user.
 
 ## Request
 
@@ -9,8 +9,8 @@ Retrieve the active cape URL for a registered user.
 
 ### URL Parameters
 
-| Parameter | Type   | Required | Description                   |
-|-----------|--------|----------|-------------------------------|
+| Parameter  | Type   | Required | Description                   |
+|------------|--------|----------|-------------------------------|
 | `username` | string | yes      | Minecraft username (IGN) to look up |
 
 ## Response
@@ -21,7 +21,9 @@ If the user is registered and has a cape equipped:
 
 ```json
 {
-    "cape": "http://localhost:8000/assets/capes/1490.png"
+    "textureURL": "http://localhost:8000/assets/capes/1490.png",
+    "staticURL": "http://localhost:8000/assets/capes/1490.png",
+    "animatedCape": false
 }
 ```
 
@@ -29,7 +31,9 @@ If the user is registered but has no cape equipped (`capeid` is `"null"`):
 
 ```json
 {
-    "cape": "http://localhost:8000/assets/capes/null.png"
+    "textureURL": "http://localhost:8000/assets/capes/null.png",
+    "staticURL": "http://localhost:8000/assets/capes/null.png",
+    "animatedCape": false
 }
 ```
 
@@ -37,15 +41,19 @@ If the user is not registered (no `user_meta/{username}.json` file exists), a fa
 
 ```json
 {
-    "cape": "http://localhost:8000/assets/capes/null.png"
+    "textureURL": "http://localhost:8000/assets/capes/null.png",
+    "staticURL": "http://localhost:8000/assets/capes/null.png",
+    "animatedCape": false
 }
 ```
 
-### Field
+### Fields
 
-| Field  | Type   | Description                                  |
-|--------|--------|----------------------------------------------|
-| `cape` | string | Full URL to the player's cape PNG texture, or the fallback `null.png` |
+| Field          | Type    | Description                                      |
+|----------------|---------|--------------------------------------------------|
+| `textureURL`   | string  | URL to the player's cape PNG texture             |
+| `staticURL`    | string  | URL to the player's static cape PNG texture      |
+| `animatedCape` | boolean | Whether the cape is animated (always `false` currently) |
 
 ### Errors
 

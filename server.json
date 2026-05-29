@@ -1,8 +1,7 @@
 {
-	"httpsserver": "https://api.hex.io",
-	"clientserver": "http://localhost:8000",
-	"version-api": "1",
-	"client-version": "1.0.0",
-	"updaterequired": false,
-	"catalogurl": "http://localhost:8000/"
+  "name":"PiCapes [V3.1.2]",
+  "serverHost":"http://localhost:8000",
+  "catalogurl": "http://localhost:8000",
+  "version-api": "1"
+
 }

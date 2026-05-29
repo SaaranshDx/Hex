@@ -205,7 +205,7 @@ object HexCapeTexture {
         }
     }
 
-    private fun queueRefresh(username: String) {
+    fun queueRefresh(username: String) {
         val entry = entries.computeIfAbsent(cacheKey(username)) { createEntry(username) }
         if (!entry.refreshInFlight.compareAndSet(false, true)) {
             return
@@ -231,13 +231,13 @@ object HexCapeTexture {
         val client = client ?: return
         val profile = Hex.fetchUserdata(username)
 
-        val capeUrl = profile?.cape?.trim().orEmpty()
-        if (capeUrl.isEmpty()) {
+        val textureUrl = profile?.textureURL?.trim().orEmpty()
+        if (textureUrl.isEmpty() || textureUrl.endsWith("null.png")) {
             clearTexture(client, entry, username)
             return
         }
 
-        val imageBytes = Hex.downloadBytes(capeUrl)
+        val imageBytes = Hex.downloadBytes(textureUrl)
             ?: readCachedTexture(username)
             ?: return
 

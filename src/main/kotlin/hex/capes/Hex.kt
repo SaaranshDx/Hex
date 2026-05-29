@@ -33,7 +33,9 @@ object Hex : ModInitializer {
 
 	fun fetchUserdata(username: String): ProfileResponse? {
 		try {
-			val serverUrl = HexServers.clientServer.takeIf { it.isNotEmpty() } ?: "http://localhost:8000"
+			val serverUrl = HexServers.clientServer.takeIf { it.isNotEmpty() }
+				?: "http://localhost:8000"
+
 			val request = HttpRequest.newBuilder()
 				.uri(URI.create("$serverUrl/profile/${encodePathSegment(username)}"))
 				.GET()
@@ -44,14 +46,25 @@ object Hex : ModInitializer {
 				request,
 				HttpResponse.BodyHandlers.ofString()
 			)
+
 			if (response.statusCode() !in 200..299) {
 				logger.warn("Failed to fetch profile for {}: HTTP {}", username, response.statusCode())
 				return null
 			}
 
 			val root = JsonParser.parseString(response.body()).asJsonObject
-			val cape = root.get("cape")?.takeUnless { it.isJsonNull }?.asString
-			return ProfileResponse(cape)
+
+			val capeUrl = root.get("cape")
+				?.takeUnless { it.isJsonNull }
+				?.asString
+				?: return null
+
+			return ProfileResponse(
+				textureURL = capeUrl,
+				staticURL = capeUrl,
+				animatedCape = false
+			)
+
 		} catch (e: Exception) {
 			logger.warn("Failed to fetch profile for {}", username, e)
 			return null
@@ -120,5 +133,5 @@ object Hex : ModInitializer {
 		return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20")
 	}
 
-	data class ProfileResponse(val cape: String?)
+	data class ProfileResponse(val textureURL: String?, val staticURL: String?, val animatedCape: Boolean)
 }

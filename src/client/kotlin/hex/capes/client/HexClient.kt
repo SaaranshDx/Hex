@@ -26,14 +26,6 @@ object HexClient : ClientModInitializer {
 		ClientLifecycleEvents.CLIENT_STOPPING.register { HexCapeTexture.shutdown() }
 
 		ClientPlayConnectionEvents.JOIN.register { handler, _, client ->
-			HexCapeTexture.primeKnownPlayers(client, handler.playerList.mapNotNull { it.profile?.name })
-		}
-
-
-
-	
-
-		ClientPlayConnectionEvents.JOIN.register { handler, _, client ->
 
 			HexCapeTexture.primeKnownPlayers(
 				client,
@@ -42,50 +34,60 @@ object HexClient : ClientModInitializer {
 
 			HexServers.fetchServerConfig()
 
-// check for player registration state
-			HexServers.fetchPlayerRegistrationState(client.player?.name?.string ?: "")
+			val playerName = client.player?.name?.string ?: return@register
 
-			if (HexServers.updateRequiredstatus) {
+			// Check player registration state
+			HexServers.fetchPlayerRegistrationState(playerName)
 
-
-			client.player?.sendMessage(
-				Text.literal("A new Hex update is available. Please update to the latest version to continue using Hex features. Update at ")
-					.append(
-						Text.literal(HexServers.catalogurl)
-							.styled { it.withColor(Formatting.RED)
-								.withClickEvent(ClickEvent.OpenUrl(URI.create("${HexServers.catalogurl}/update")))
-								.withHoverEvent(HoverEvent.ShowText(Text.literal("Click to open link"))) }
-					),
-				false
-			)
+			// If registered, fetch profile and render cape
+			if (HexServers.playerRegistrationState) {
+				HexCapeTexture.queueRefresh(playerName)
 			}
 
-// update checks
+			if (HexServers.updateRequiredstatus) {
+				client.player?.sendMessage(
+					Text.literal("A new Hex update is available. Please update to the latest version to continue using Hex features. Update at ")
+						.append(
+							Text.literal(HexServers.catalogurl)
+								.styled { it.withColor(Formatting.RED)
+									.withClickEvent(ClickEvent.OpenUrl(URI.create("${HexServers.catalogurl}/update")))
+									.withHoverEvent(HoverEvent.ShowText(Text.literal("Click to open link"))) }
+						),
+					false
+				)
+			}
 
-		if (!HexServers.playerRegistrationState) {
-			client.player?.sendMessage(
-				Text.literal("Your account is not registered on the Hex servers any of the cosmetic features won't work register at ")
-					.append(
-						Text.literal(HexServers.catalogurl)
-							.styled { it.withColor(Formatting.YELLOW)
-								.withClickEvent(ClickEvent.OpenUrl(URI.create(HexServers.catalogurl)))
-								.withHoverEvent(HoverEvent.ShowText(Text.literal("Click to open link"))) }
-					),
-				false
-			)
-		}
-
-
+			if (!HexServers.playerRegistrationState) {
+				client.player?.sendMessage(
+					Text.literal("Your account is not registered on the Hex servers any of the cosmetic features won't work register at ")
+						.append(
+							Text.literal(HexServers.catalogurl)
+								.styled { it.withColor(Formatting.YELLOW)
+									.withClickEvent(ClickEvent.OpenUrl(URI.create(HexServers.catalogurl)))
+									.withHoverEvent(HoverEvent.ShowText(Text.literal("Click to open link"))) }
+						),
+					false
+				)
+			}
 		}
 
 // reload cache cmd
 
 		ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
 			dispatcher.register(
-				ClientCommandManager.literal("reloadcosmetics")
+				ClientCommandManager.literal("reloadcache")
 					.executes { context ->
 						HexServers.reloadAll()
-						context.source.sendFeedback(Text.literal("Reloading cosmetics cache."))
+						val player = context.source.player
+						if (player != null) {
+							val name = player.name.string
+							HexServers.fetchPlayerRegistrationState(name)
+							if (HexServers.playerRegistrationState) {
+								HexCapeTexture.queueRefresh(name)
+							}
+							HexCapeTexture.reloadAll()
+						}
+						context.source.sendFeedback(Text.literal("Reloaded cache."))
 						1
 					}
 			)
