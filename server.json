@@ -1,7 +1,8 @@
 {
 	"httpsserver": "https://api.hex.io",
 	"clientserver": "http://localhost:8000",
-	"version-api": "v1",
+	"version-api": "1",
 	"client-version": "1.0.0",
-	"updaterequired": false
+	"updaterequired": false,
+	"catalogurl": "http://localhost:8000/"
 }

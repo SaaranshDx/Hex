@@ -13,6 +13,7 @@ object HexServers {
     var versionApi: String = ""
     var clientVersion: String = ""
     var updateRequired: Boolean = false
+    var catalogurl: String = ""
 
     fun fetchServerConfig() {
 
@@ -39,13 +40,14 @@ object HexServers {
             versionApi = json["version-api"].asString
             clientVersion = json["client-version"].asString
             updateRequired = json["updaterequired"].asBoolean
+            catalogurl = json["catalogurl"].asString
 
             println("HTTPS Server: $httpsServer")
             println("Client Server: $clientServer")
             println("Version API: $versionApi")
             println("Client Version: $clientVersion")
             println("Update Required: $updateRequired")
-
+            println("Catalog URL: $catalogurl")
         } catch (e: Exception) {
 
             e.printStackTrace()
@@ -91,10 +93,17 @@ object HexServers {
     fun openCatalogue() {
         try {
             Util.getOperatingSystem().open(
-                "https://hexcapes.netlify.app/catalogue"
+                "$catalogurl"
             )
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
+
+    fun isUpdateRequired(): Boolean {
+        return versionApi > clientVersion
+    }
+
+    var updateRequiredstatus: Boolean = isupdateRequired()
+
 }

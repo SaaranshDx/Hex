@@ -45,15 +45,15 @@ object HexClient : ClientModInitializer {
 // check for player registration state
 			HexServers.fetchPlayerRegistrationState(client.player?.name?.string ?: "")
 
-			if (HexServers.updateRequired) {
+			if (HexServers.updateRequiredstatus) {
 
 
 			client.player?.sendMessage(
-				Text.literal("A new Hex update expect broken features or consider updating from ")
+				Text.literal("A new Hex update is available. Please update to the latest version to continue using Hex features. Update at ")
 					.append(
-						Text.literal("https://hexcapes.netlify.app/update")
+						Text.literal(HexServers.catalogurl)
 							.styled { it.withColor(Formatting.RED)
-								.withClickEvent(ClickEvent.OpenUrl(URI.create("https://hexcapes.netlify.app/update")))
+								.withClickEvent(ClickEvent.OpenUrl(URI.create(HexServers.catalogurl/update)))
 								.withHoverEvent(HoverEvent.ShowText(Text.literal("Click to open link"))) }
 					),
 				false
@@ -66,9 +66,9 @@ object HexClient : ClientModInitializer {
 			client.player?.sendMessage(
 				Text.literal("Your account is not registered on the Hex servers any of the cosmetic features won't work register at ")
 					.append(
-						Text.literal("https://hexcapes.netlify.app/register")
+						Text.literal(HexServers.catalogurl)
 							.styled { it.withColor(Formatting.YELLOW)
-								.withClickEvent(ClickEvent.OpenUrl(URI.create("https://hexcapes.netlify.app/register")))
+								.withClickEvent(ClickEvent.OpenUrl(URI.create(HexServers.catalogurl)))
 								.withHoverEvent(HoverEvent.ShowText(Text.literal("Click to open link"))) }
 					),
 				false
