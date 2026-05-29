@@ -1,5 +1,6 @@
 package hex.capes
 
+import com.google.gson.JsonArray
 import com.google.gson.JsonParser
 import net.fabricmc.api.ModInitializer
 import org.slf4j.LoggerFactory
@@ -14,7 +15,7 @@ import java.time.Duration
 object Hex : ModInitializer {
 
 	private val logger = LoggerFactory.getLogger("hex")
-	private val httpClient = HttpClient.newBuilder()
+	internal val httpClient = HttpClient.newBuilder()
 		.connectTimeout(Duration.ofSeconds(10))
 		.followRedirects(HttpClient.Redirect.NORMAL)
 		.build()
@@ -80,8 +81,9 @@ object Hex : ModInitializer {
 	fun fetchCapeUrls(playerNames: List<String>): Map<String, String?> {
 		return try {
 			val serverUrl = HexServers.clientServer.takeIf { it.isNotEmpty() } ?: "http://localhost:8000"
-			val playersJson = playerNames.joinToString(",") { "\"$it\"" }
-			val requestBody = HttpRequest.BodyPublishers.ofString("[$playersJson]")
+			val jsonArray = JsonArray()
+			playerNames.forEach { jsonArray.add(it) }
+			val requestBody = HttpRequest.BodyPublishers.ofString(jsonArray.toString())
 
 			val request = HttpRequest.newBuilder()
 				.uri(URI.create("$serverUrl/other"))
@@ -114,7 +116,7 @@ object Hex : ModInitializer {
 		}
 	}
 
-	private fun encodePathSegment(value: String): String {
+	internal fun encodePathSegment(value: String): String {
 		return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20")
 	}
 

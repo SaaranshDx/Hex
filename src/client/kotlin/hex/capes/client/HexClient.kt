@@ -53,7 +53,7 @@ object HexClient : ClientModInitializer {
 					.append(
 						Text.literal(HexServers.catalogurl)
 							.styled { it.withColor(Formatting.RED)
-								.withClickEvent(ClickEvent.OpenUrl(URI.create(HexServers.catalogurl/update)))
+								.withClickEvent(ClickEvent.OpenUrl(URI.create("${HexServers.catalogurl}/update")))
 								.withHoverEvent(HoverEvent.ShowText(Text.literal("Click to open link"))) }
 					),
 				false

@@ -65,18 +65,18 @@ object HexServers {
 
         try {
 
-            val client = HttpClient.newHttpClient()
+            val serverUrl = clientServer.takeIf { it.isNotEmpty() } ?: "http://localhost:8000"
 
             val request = HttpRequest.newBuilder()
                 .uri(
                     URI.create(
-                        "$clientServer/registration-state/$playerName"
+                        "$serverUrl/registration-state/${Hex.encodePathSegment(playerName)}"
                     )
                 )
                 .GET()
                 .build()
 
-            val response = client.send(
+            val response = Hex.httpClient.send(
                 request,
                 HttpResponse.BodyHandlers.ofString()
             )
@@ -104,6 +104,6 @@ object HexServers {
         return versionApi > clientVersion
     }
 
-    var updateRequiredstatus: Boolean = isupdateRequired()
+    var updateRequiredstatus: Boolean = isUpdateRequired()
 
 }
