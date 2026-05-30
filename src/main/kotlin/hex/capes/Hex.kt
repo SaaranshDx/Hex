@@ -16,6 +16,7 @@ object Hex : ModInitializer {
 
 	private val logger = LoggerFactory.getLogger("hex")
 	internal val httpClient = HttpClient.newBuilder()
+		.version(HttpClient.Version.HTTP_1_1)
 		.connectTimeout(Duration.ofSeconds(10))
 		.followRedirects(HttpClient.Redirect.NORMAL)
 		.build()

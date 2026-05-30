@@ -3,7 +3,6 @@ package hex.capes
 import com.google.gson.JsonParser
 import net.minecraft.util.Util
 import java.net.URI
-import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
@@ -18,20 +17,19 @@ object HexServers {
 
     fun fetchServerConfig() {
         try {
-            val client = HttpClient.newHttpClient()
-
             val request = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:3000/server.json"))
                 .GET()
                 .timeout(Duration.ofSeconds(5))
                 .build()
 
-            val response = client.send(
+            val response = Hex.httpClient.send(
                 request,
                 HttpResponse.BodyHandlers.ofString()
             )
 
             val json = JsonParser.parseString(response.body()).asJsonObject
+
 
             //httpsServer = json["httpsserver"]?.asString ?: ""
             clientServer = json["serverHost"]?.asString ?: ""
@@ -67,6 +65,7 @@ object HexServers {
                     )
                 )
                 .GET()
+                .timeout(Duration.ofSeconds(10))
                 .build()
 
             val response = Hex.httpClient.send(
