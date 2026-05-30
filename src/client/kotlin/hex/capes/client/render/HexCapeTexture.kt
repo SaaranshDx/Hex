@@ -18,7 +18,7 @@ object HexCapeTexture {
 
     private const val VANILLA_CAPE_WIDTH = 64
     private const val VANILLA_CAPE_HEIGHT = 32
-    private const val REFRESH_INTERVAL_MS = 600_000L // Only refresh every 10 mins
+    private const val REFRESH_INTERVAL_MS = 60_000L // Only refresh every 60 seconds
 
     private val logger = LoggerFactory.getLogger("hex")
     private val executor = Executors.newSingleThreadExecutor { runnable ->

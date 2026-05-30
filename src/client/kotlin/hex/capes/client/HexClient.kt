@@ -84,7 +84,7 @@ object HexClient : ClientModInitializer {
 				ClientCommandManager.literal("reloadcache")
 					.executes { context ->
 						val player = context.source.player
-						context.source.sendFeedback(Text.literal("Reloading cache..."))
+						context.source.sendFeedback(Text.literal("Reloading cache... this may take a few moments"))
 						Thread {
 							HexServers.reloadAll()
 							if (player != null) {
