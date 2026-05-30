@@ -1,6 +1,6 @@
 {
   "name":"PiCapes [V3.1.2]",
-  "serverHost":"http://localhost:8000",
+  "serverHost": "http://127.0.0.1:8000",
   "catalogurl": "http://localhost:8000",
   "version-api": "1"
 
