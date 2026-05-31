@@ -18,7 +18,7 @@ object HexServers {
     fun fetchServerConfig() {
         try {
             val request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:3000/server.json"))
+                .uri(URI.create("https://hexcapes.qzz.io/server.json"))
                 .GET()
                 .timeout(Duration.ofSeconds(5))
                 .build()

@@ -1,9 +1,23 @@
-# Hex
+<br>
+<p align="center">
+  <a href="https://hexcapes.qzz.io">
+    <img src="assets/logo.png" height="96">
+    <h3 align="center">Hex</h3>
+  </a>
+</p>
 
-## Setup
+<p align="center">
+  Create.
+  Collect.
+  Wear.
+</p>
 
-For setup instructions, please see the [Fabric Documentation page](https://docs.fabricmc.net/develop/getting-started/creating-a-project#setting-up) related to the IDE that you are using.
+<p align="center">A community driven minecraft cosmetic project</p>
 
-## License
+<p align="center">
+  <a href="https://dsc.gg/hexcapes"><strong>Community</strong></a> ·
+  <a href="https://hexcapes.qzz.io"><strong>Catalog</strong></a> ·
+  <a href="https://hexcapes.qzz.io/uptime"><strong>Uptime</strong></a>
+</p>
+<br/>
 
-This template is available under the CC0 license. Feel free to learn from it and incorporate it in your own projects.

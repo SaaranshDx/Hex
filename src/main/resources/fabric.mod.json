@@ -3,12 +3,12 @@
 	"id": "hex",
 	"version": "${version}",
 	"name": "Hex",
-	"description": "lightweight cosmetic cape mod for Minecraft",
+	"description": "Create. Collect. Wear. A community driven cosmetic project",
 	"authors": [
 		"Saaransh_Xd"
 	],
 	"contact": {
-		"homepage": "https://github.com/SaaranshDx/Hex",
+		"homepage": "https://hexcapes.qzz.io",
 		"sources": "https://github.com/SaaranshDx/Hex"
 	},
 	"license": "MIT",
