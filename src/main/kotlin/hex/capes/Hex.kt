@@ -55,10 +55,13 @@ object Hex : ModInitializer {
 
 			val root = JsonParser.parseString(response.body()).asJsonObject
 
-			val capeUrl = root.get("cape")
-				?.takeUnless { it.isJsonNull }
-				?.asString
-				?: return null
+			val capeUrl = sequenceOf("textureURL", "cape", "staticURL")
+				.mapNotNull { fieldName ->
+					root.get(fieldName)
+						?.takeUnless { it.isJsonNull }
+						?.asString
+				}
+				.firstOrNull()
 
 			return ProfileResponse(
 				textureURL = capeUrl,

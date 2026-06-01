@@ -13,11 +13,14 @@ import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 
 object HexCapeTexture {
 
     private const val VANILLA_CAPE_WIDTH = 64
     private const val VANILLA_CAPE_HEIGHT = 32
+    private const val MAX_BAKED_CAPE_WIDTH = 1024
+    private const val MAX_BAKED_CAPE_HEIGHT = 512
     private const val REFRESH_INTERVAL_MS = 60_000L // Only refresh every 60 seconds
 
     private val logger = LoggerFactory.getLogger("hex")
@@ -76,7 +79,7 @@ object HexCapeTexture {
             }
     }
 
-    fun reloadAll() {
+    fun reloadAll(forceRefresh: Boolean = false) {
         val client = client ?: return
         initialize(client)
 
@@ -91,15 +94,15 @@ object HexCapeTexture {
         usernames.forEach { username ->
             trackUser(username)
             loadFromDisk(username)
-            queueRefresh(username)
+            queueRefresh(username, forceRefresh)
         }
     }
 
     fun syncCapesWithServer(client: MinecraftClient) {
         val playerList = client.networkHandler
             ?.playerList
-            ?.map { it.profile.name.lowercase() }
-            ?.filter { it != client.session.username.lowercase() }
+            ?.map { it.profile.name }
+            ?.filter { it != client.session.username }
             ?: emptyList()
 
         if (playerList.isEmpty()) {
@@ -111,22 +114,23 @@ object HexCapeTexture {
                 val capeUrls = Hex.fetchCapeUrls(playerList)
                 
                 for ((playerName, capeUrl) in capeUrls) {
-                    if (capeUrl != null) {
-                        val entry = entries.computeIfAbsent(cacheKey(playerName)) { createEntry(playerName) }
-                        
-                        val imageBytes = Hex.downloadBytes(capeUrl)
-                            ?: readCachedTexture(playerName)
-                            ?: continue
-                        
-                        writeCache(playerName, imageBytes)
-                        registerTexture(client, entry, imageBytes)
-                    } else {
-                        // Skip rendering if URL is null
-                        val cacheKey = cacheKey(playerName)
-                        val entry = entries[cacheKey]
-                        if (entry != null) {
+                    try {
+                        if (capeUrl != null) {
+                            val entry = entries.computeIfAbsent(cacheKey(playerName)) { createEntry(playerName) }
+
+                            val imageBytes = Hex.downloadBytes(capeUrl)
+                                ?: readCachedTexture(playerName)
+                                ?: continue
+
+                            writeCache(playerName, imageBytes)
+                            registerTexture(client, entry, imageBytes)
+                            entry.lastRefreshTime = System.currentTimeMillis()
+                        } else {
+                            val entry = entries[cacheKey(playerName)] ?: continue
                             clearTexture(client, entry, playerName)
                         }
+                    } catch (exception: Exception) {
+                        logger.warn("Failed to sync cape for {}", playerName, exception)
                     }
                 }
             } catch (e: Exception) {
@@ -140,9 +144,11 @@ object HexCapeTexture {
 
         trackUser(normalizedName)
         loadFromDisk(normalizedName)
-        queueRefresh(normalizedName)
-
         val entry = entries[cacheKey(normalizedName)] ?: return null
+
+        if (!entry.registered) {
+            queueRefresh(normalizedName)
+        }
         return if (entry.registered) entry.textureId else null
     }
 
@@ -163,8 +169,9 @@ object HexCapeTexture {
     }
 
     private fun trackUser(username: String) {
-        trackedUsers += username
-        persistTrackedUsers()
+        if (trackedUsers.add(username)) {
+            persistTrackedUsers()
+        }
         entries.computeIfAbsent(cacheKey(username)) { createEntry(username) }
     }
 
@@ -205,14 +212,14 @@ object HexCapeTexture {
         }
     }
 
-    fun queueRefresh(username: String) {
+    fun queueRefresh(username: String, force: Boolean = false) {
         val entry = entries.computeIfAbsent(cacheKey(username)) { createEntry(username) }
         if (!entry.refreshInFlight.compareAndSet(false, true)) {
             return
         }
 
         val currentTime = System.currentTimeMillis()
-        if (currentTime - entry.lastRefreshTime < REFRESH_INTERVAL_MS) {
+        if (!force && currentTime - entry.lastRefreshTime < REFRESH_INTERVAL_MS) {
             entry.refreshInFlight.set(false)
             return
         }
@@ -230,8 +237,11 @@ object HexCapeTexture {
     private fun refreshCape(username: String, entry: CapeEntry) {
         val client = client ?: return
         val profile = Hex.fetchUserdata(username)
+        if (profile == null) {
+            return
+        }
 
-        val textureUrl = profile?.textureURL?.trim().orEmpty()
+        val textureUrl = profile.textureURL?.trim().orEmpty()
         if (textureUrl.isEmpty() || textureUrl.endsWith("null.png")) {
             clearTexture(client, entry, username)
             return
@@ -246,29 +256,58 @@ object HexCapeTexture {
     }
 
     private fun registerTexture(client: MinecraftClient, entry: CapeEntry, imageBytes: ByteArray) {
-        val bakedImage = NativeImage.read(imageBytes).use(::bakeCapeProviderTexture)
+        val generation = entry.generation.incrementAndGet()
+        val bakedImage = try {
+            NativeImage.read(imageBytes).use(::bakeCapeProviderTexture)
+        } catch (exception: Exception) {
+            logger.warn("Failed to bake cape texture for {}", entry.cacheKey, exception)
+            return
+        }
 
-        client.execute {
-            client.textureManager.destroyTexture(entry.textureId)
-            client.textureManager.registerTexture(
-                entry.textureId,
-                NativeImageBackedTexture({ "hex_cape_${entry.cacheKey}" }, bakedImage)
-            )
-            entry.registered = true
+        client.execute registerTask@{
+            if (entry.generation.get() != generation) {
+                bakedImage.close()
+                return@registerTask
+            }
+
+            try {
+                client.textureManager.destroyTexture(entry.textureId)
+                client.textureManager.registerTexture(
+                    entry.textureId,
+                    NativeImageBackedTexture({ "hex_cape_${entry.cacheKey}" }, bakedImage)
+                )
+                entry.registered = true
+                entry.diskLoadPending.set(false)
+            } catch (exception: Exception) {
+                bakedImage.close()
+                logger.warn("Failed to register cape texture for {}", entry.cacheKey, exception)
+            }
         }
     }
 
     private fun clearTexture(client: MinecraftClient, entry: CapeEntry, username: String) {
-        try {
-            Files.deleteIfExists(cacheFile(username))
-        } catch (exception: Exception) {
-            logger.warn("Failed to delete cached cape for {}", username, exception)
-        }
+        val generation = entry.generation.incrementAndGet()
 
-        client.execute {
+        client.execute clearTask@{
+            if (entry.generation.get() != generation) {
+                return@clearTask
+            }
+
             client.textureManager.destroyTexture(entry.textureId)
             entry.registered = false
             entry.diskLoadPending.set(true)
+
+            executor.execute deleteCacheTask@{
+                if (entry.generation.get() != generation) {
+                    return@deleteCacheTask
+                }
+
+                try {
+                    Files.deleteIfExists(cacheFile(username))
+                } catch (exception: Exception) {
+                    logger.warn("Failed to delete cached cape for {}", username, exception)
+                }
+            }
         }
     }
 
@@ -319,6 +358,10 @@ object HexCapeTexture {
             imageHeight *= 2
         }
 
+        if (imageWidth > MAX_BAKED_CAPE_WIDTH || imageHeight > MAX_BAKED_CAPE_HEIGHT) {
+            throw IllegalArgumentException("Cape texture is too large: ${sourceWidth}x${sourceHeight}")
+        }
+
         val bakedImage = NativeImage(imageWidth, imageHeight, true)
         for (x in 0 until sourceWidth) {
             for (y in 0 until sourceHeight) {
@@ -364,6 +407,7 @@ object HexCapeTexture {
         val textureId: Identifier,
         val diskLoadPending: AtomicBoolean = AtomicBoolean(true),
         val refreshInFlight: AtomicBoolean = AtomicBoolean(false),
+        val generation: AtomicLong = AtomicLong(0L),
         @Volatile var registered: Boolean = false,
         @Volatile var lastRefreshTime: Long = 0L
     )

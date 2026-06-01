@@ -91,9 +91,9 @@ object HexClient : ClientModInitializer {
 								val name = player.name.string
 								HexServers.fetchPlayerRegistrationState(name)
 								if (HexServers.playerRegistrationState) {
-									HexCapeTexture.queueRefresh(name)
+									HexCapeTexture.queueRefresh(name, force = true)
 								}
-								HexCapeTexture.reloadAll()
+								HexCapeTexture.reloadAll(forceRefresh = true)
 							}
 							context.source.client.execute {
 								context.source.sendFeedback(Text.literal("Reloaded cache."))
