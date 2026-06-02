@@ -37,6 +37,7 @@ object HexClient : ClientModInitializer {
 			Thread {
 				HexServers.fetchServerConfig()
 				HexServers.fetchPlayerRegistrationState(playerName)
+				HexCapeTexture.syncCapesWithServer(client, forceRefresh = true)
 
 				client.execute {
 					if (HexServers.updateRequiredstatus) {

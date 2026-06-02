@@ -98,7 +98,7 @@ object HexCapeTexture {
         }
     }
 
-    fun syncCapesWithServer(client: MinecraftClient) {
+    fun syncCapesWithServer(client: MinecraftClient, forceRefresh: Boolean = false) {
         val playerList = client.networkHandler
             ?.playerList
             ?.map { it.profile.name }
@@ -115,9 +115,13 @@ object HexCapeTexture {
                 
                 for ((playerName, capeUrl) in capeUrls) {
                     try {
-                        if (capeUrl != null) {
-                            val entry = entries.computeIfAbsent(cacheKey(playerName)) { createEntry(playerName) }
+                        trackUser(playerName)
+                        val entry = entries.computeIfAbsent(cacheKey(playerName)) { createEntry(playerName) }
+                        if (!forceRefresh && System.currentTimeMillis() - entry.lastRefreshTime < REFRESH_INTERVAL_MS) {
+                            continue
+                        }
 
+                        if (capeUrl != null) {
                             val imageBytes = Hex.downloadBytes(capeUrl)
                                 ?: readCachedTexture(playerName)
                                 ?: continue
@@ -126,8 +130,8 @@ object HexCapeTexture {
                             registerTexture(client, entry, imageBytes)
                             entry.lastRefreshTime = System.currentTimeMillis()
                         } else {
-                            val entry = entries[cacheKey(playerName)] ?: continue
                             clearTexture(client, entry, playerName)
+                            entry.lastRefreshTime = System.currentTimeMillis()
                         }
                     } catch (exception: Exception) {
                         logger.warn("Failed to sync cape for {}", playerName, exception)
