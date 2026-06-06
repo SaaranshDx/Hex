@@ -129,7 +129,7 @@ object HexClient : ClientModInitializer {
 		}
 
 		LivingEntityFeatureRendererRegistrationCallback.EVENT.register { _, entityRenderer, registrationHelper, context ->
-			if (entityRenderer is PlayerEntityRenderer<*>) {
+			if (entityRenderer is PlayerEntityRenderer) {
 				@Suppress("UNCHECKED_CAST")
 				val playerRenderer =
 					entityRenderer as FeatureRendererContext<PlayerEntityRenderState, PlayerEntityModel>

@@ -1,9 +1,7 @@
 package hex.capes.client.render
 
 import net.minecraft.client.MinecraftClient
-import net.minecraft.client.render.OverlayTexture
-import net.minecraft.client.render.RenderLayers
-import net.minecraft.client.render.command.OrderedRenderCommandQueue
+import net.minecraft.client.render.VertexConsumerProvider
 import net.minecraft.client.render.entity.EntityRendererFactory
 import net.minecraft.client.render.entity.equipment.EquipmentModel
 import net.minecraft.client.render.entity.equipment.EquipmentModelLoader
@@ -23,7 +21,7 @@ class HexCapeFeatureRenderer(
     rendererContext: EntityRendererFactory.Context
 ) : FeatureRenderer<PlayerEntityRenderState, PlayerEntityModel>(context) {
 
-    private val capeModel = PlayerCapeModel(rendererContext.entityModels.getModelPart(EntityModelLayers.PLAYER_CAPE))
+    private val capeModel = PlayerCapeModel<PlayerEntityRenderState>(rendererContext.entityModels.getModelPart(EntityModelLayers.PLAYER_CAPE))
     private val equipmentModelLoader: EquipmentModelLoader = rendererContext.equipmentModelLoader
     
     @Volatile
@@ -32,7 +30,7 @@ class HexCapeFeatureRenderer(
 
     override fun render(
         matrices: MatrixStack,
-        queue: OrderedRenderCommandQueue,
+        vertexConsumers: VertexConsumerProvider,
         light: Int,
         state: PlayerEntityRenderState,
         limbAngle: Float,
@@ -55,15 +53,14 @@ class HexCapeFeatureRenderer(
             matrices.translate(0.0f, -0.053125f, 0.06875f)
         }
 
-        queue.submitModel(
+        render(
             capeModel,
-            state,
+            textureId,
             matrices,
-            RenderLayers.entitySolid(textureId),
+            vertexConsumers,
             light,
-            OverlayTexture.DEFAULT_UV,
-            state.outlineColor,
-            null
+            state,
+            -1
         )
         matrices.pop()
     }
