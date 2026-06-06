@@ -1,69 +1,92 @@
 package hex.capes.client.render
 
 import net.minecraft.client.MinecraftClient
+import net.minecraft.client.network.AbstractClientPlayerEntity
 import net.minecraft.client.render.OverlayTexture
-import net.minecraft.client.render.RenderLayers
-import net.minecraft.client.render.command.OrderedRenderCommandQueue
+import net.minecraft.client.render.RenderLayer
+import net.minecraft.client.render.VertexConsumerProvider
 import net.minecraft.client.render.entity.EntityRendererFactory
-import net.minecraft.client.render.entity.equipment.EquipmentModel
-import net.minecraft.client.render.entity.equipment.EquipmentModelLoader
 import net.minecraft.client.render.entity.feature.FeatureRenderer
 import net.minecraft.client.render.entity.feature.FeatureRendererContext
-import net.minecraft.client.render.entity.model.EntityModelLayers
-import net.minecraft.client.render.entity.model.PlayerCapeModel
 import net.minecraft.client.render.entity.model.PlayerEntityModel
-import net.minecraft.client.render.entity.state.PlayerEntityRenderState
 import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.component.DataComponentTypes
-import net.minecraft.entity.player.PlayerEntity
-import net.minecraft.item.ItemStack
+import net.minecraft.entity.EquipmentSlot
+import net.minecraft.entity.player.PlayerModelPart
+import net.minecraft.item.Items
+import net.minecraft.util.math.MathHelper
+import net.minecraft.util.math.RotationAxis
 
 class HexCapeFeatureRenderer(
-    context: FeatureRendererContext<PlayerEntityRenderState, PlayerEntityModel>,
-    rendererContext: EntityRendererFactory.Context
-) : FeatureRenderer<PlayerEntityRenderState, PlayerEntityModel>(context) {
+    context: FeatureRendererContext<AbstractClientPlayerEntity, PlayerEntityModel<AbstractClientPlayerEntity>>,
+    @Suppress("UNUSED_PARAMETER") rendererContext: EntityRendererFactory.Context
+) : FeatureRenderer<AbstractClientPlayerEntity, PlayerEntityModel<AbstractClientPlayerEntity>>(context) {
 
-    private val capeModel = PlayerCapeModel(rendererContext.entityModels.getModelPart(EntityModelLayers.PLAYER_CAPE))
-    private val equipmentModelLoader: EquipmentModelLoader = rendererContext.equipmentModelLoader
-    
     @Volatile
     private var lastSyncTime: Long = 0L
     private val SYNC_INTERVAL_MS = 10_000L // Sync every 10 seconds
 
     override fun render(
         matrices: MatrixStack,
-        queue: OrderedRenderCommandQueue,
+        vertexConsumers: VertexConsumerProvider,
         light: Int,
-        state: PlayerEntityRenderState,
+        player: AbstractClientPlayerEntity,
         limbAngle: Float,
-        limbDistance: Float
+        limbDistance: Float,
+        tickDelta: Float,
+        animationProgress: Float,
+        headYaw: Float,
+        headPitch: Float
     ) {
-        if (state.invisible || !state.capeVisible) {
+        if (player.isInvisible || !player.isPartVisible(PlayerModelPart.CAPE)) {
             return
         }
 
         // Periodically sync with server to get cape URLs for all players
         syncWithServerIfNeeded()
 
-        val textureId = HexCapeTexture.getTextureId(resolveUsername(state)) ?: return
-        if (hasCustomModelForLayer(state.equippedChestStack, EquipmentModel.LayerType.WINGS)) {
+        val textureId = HexCapeTexture.getTextureId(player.gameProfile.name) ?: return
+        if (player.getEquippedStack(EquipmentSlot.CHEST).isOf(Items.ELYTRA)) {
             return
         }
 
         matrices.push()
-        if (hasCustomModelForLayer(state.equippedChestStack, EquipmentModel.LayerType.HUMANOID)) {
-            matrices.translate(0.0f, -0.053125f, 0.06875f)
+        matrices.translate(0.0f, 0.0f, 0.125f)
+
+        val capeX = MathHelper.lerp(tickDelta.toDouble(), player.prevCapeX, player.capeX) -
+            MathHelper.lerp(tickDelta.toDouble(), player.prevX, player.x)
+        val capeY = MathHelper.lerp(tickDelta.toDouble(), player.prevCapeY, player.capeY) -
+            MathHelper.lerp(tickDelta.toDouble(), player.prevY, player.y)
+        val capeZ = MathHelper.lerp(tickDelta.toDouble(), player.prevCapeZ, player.capeZ) -
+            MathHelper.lerp(tickDelta.toDouble(), player.prevZ, player.z)
+        val bodyYaw = MathHelper.lerpAngleDegrees(tickDelta, player.prevBodyYaw, player.bodyYaw)
+        val yawSin = MathHelper.sin(bodyYaw * (Math.PI.toFloat() / 180.0f)).toDouble()
+        val yawCos = -MathHelper.cos(bodyYaw * (Math.PI.toFloat() / 180.0f)).toDouble()
+
+        var capePitch = (capeY.toFloat() * 10.0f).coerceIn(-6.0f, 32.0f)
+        var capeForward = ((capeX * yawSin + capeZ * yawCos).toFloat() * 100.0f).coerceIn(0.0f, 150.0f)
+        val capeSide = ((capeX * yawCos - capeZ * yawSin).toFloat() * 100.0f).coerceIn(-20.0f, 20.0f)
+        if (capeForward < 0.0f) {
+            capeForward = 0.0f
         }
 
-        queue.submitModel(
-            capeModel,
-            state,
+        val strideDistance = MathHelper.lerp(tickDelta, player.prevStrideDistance, player.strideDistance)
+        capePitch += MathHelper.sin(MathHelper.lerp(tickDelta, player.prevHorizontalSpeed, player.horizontalSpeed) * 6.0f) *
+            32.0f * strideDistance
+
+        if (player.isInSneakingPose) {
+            capePitch += 25.0f
+        }
+
+        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(6.0f + capeForward / 2.0f + capePitch))
+        matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(capeSide / 2.0f))
+        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0f - capeSide / 2.0f))
+
+        val vertexConsumer = vertexConsumers.getBuffer(RenderLayer.getEntitySolid(textureId))
+        contextModel.renderCape(
             matrices,
-            RenderLayers.entitySolid(textureId),
+            vertexConsumer,
             light,
-            OverlayTexture.DEFAULT_UV,
-            state.outlineColor,
-            null
+            OverlayTexture.DEFAULT_UV
         )
         matrices.pop()
     }
@@ -73,21 +96,9 @@ class HexCapeFeatureRenderer(
         if (currentTime - lastSyncTime < SYNC_INTERVAL_MS) {
             return
         }
-        
+
         lastSyncTime = currentTime
         val client = MinecraftClient.getInstance()
         HexCapeTexture.syncCapesWithServer(client)
-    }
-
-    private fun resolveUsername(state: PlayerEntityRenderState): String? {
-        val player = MinecraftClient.getInstance().world?.getEntityById(state.id) as? PlayerEntity
-        return player?.gameProfile?.name ?: state.playerName?.string?.trim()?.takeIf(String::isNotEmpty)
-    }
-
-    private fun hasCustomModelForLayer(stack: ItemStack, layerType: EquipmentModel.LayerType): Boolean {
-        val equippable = stack.get(DataComponentTypes.EQUIPPABLE) ?: return false
-        val assetId = equippable.assetId().orElse(null) ?: return false
-        val equipmentModel = equipmentModelLoader.get(assetId)
-        return equipmentModel.getLayers(layerType).isNotEmpty()
     }
 }

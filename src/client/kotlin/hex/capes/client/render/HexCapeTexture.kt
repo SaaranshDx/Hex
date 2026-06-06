@@ -278,7 +278,7 @@ object HexCapeTexture {
                 client.textureManager.destroyTexture(entry.textureId)
                 client.textureManager.registerTexture(
                     entry.textureId,
-                    NativeImageBackedTexture({ "hex_cape_${entry.cacheKey}" }, bakedImage)
+                    NativeImageBackedTexture(bakedImage)
                 )
                 entry.registered = true
                 entry.diskLoadPending.set(false)
@@ -369,7 +369,7 @@ object HexCapeTexture {
         val bakedImage = NativeImage(imageWidth, imageHeight, true)
         for (x in 0 until sourceWidth) {
             for (y in 0 until sourceHeight) {
-                bakedImage.setColorArgb(x, y, sourceImage.getColorArgb(x, y))
+                bakedImage.setColor(x, y, sourceImage.getColor(x, y))
             }
         }
 

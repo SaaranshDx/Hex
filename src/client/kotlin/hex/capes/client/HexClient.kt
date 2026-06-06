@@ -3,17 +3,16 @@ package hex.capes.client
 import hex.capes.client.render.HexCapeFeatureRenderer
 import hex.capes.client.render.HexCapeTexture
 import hex.capes.HexServers
-import java.net.URI
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityFeatureRendererRegistrationCallback
+import net.minecraft.client.network.AbstractClientPlayerEntity
 import net.minecraft.client.render.entity.PlayerEntityRenderer
 import net.minecraft.client.render.entity.feature.FeatureRendererContext
 import net.minecraft.client.render.entity.model.PlayerEntityModel
-import net.minecraft.client.render.entity.state.PlayerEntityRenderState
 import net.minecraft.text.ClickEvent
 import net.minecraft.text.HoverEvent
 import net.minecraft.text.Text
@@ -47,8 +46,8 @@ object HexClient : ClientModInitializer {
 									Text.literal(HexServers.catalogurl)
 										.styled {
 											it.withColor(Formatting.RED)
-												.withClickEvent(ClickEvent.OpenUrl(URI.create("${HexServers.catalogurl}/update")))
-												.withHoverEvent(HoverEvent.ShowText(Text.literal("Click to open link")))
+												.withClickEvent(ClickEvent(ClickEvent.Action.OPEN_URL, "${HexServers.catalogurl}/update"))
+												.withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("Click to open link")))
 										}
 								),
 							false
@@ -62,8 +61,8 @@ object HexClient : ClientModInitializer {
 									Text.literal(HexServers.catalogurl)
 										.styled {
 											it.withColor(Formatting.YELLOW)
-												.withClickEvent(ClickEvent.OpenUrl(URI.create(HexServers.catalogurl)))
-												.withHoverEvent(HoverEvent.ShowText(Text.literal("Click to open link")))
+												.withClickEvent(ClickEvent(ClickEvent.Action.OPEN_URL, HexServers.catalogurl))
+												.withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("Click to open link")))
 										}
 								),
 							false
@@ -129,10 +128,10 @@ object HexClient : ClientModInitializer {
 		}
 
 		LivingEntityFeatureRendererRegistrationCallback.EVENT.register { _, entityRenderer, registrationHelper, context ->
-			if (entityRenderer is PlayerEntityRenderer<*>) {
+			if (entityRenderer is PlayerEntityRenderer) {
 				@Suppress("UNCHECKED_CAST")
 				val playerRenderer =
-					entityRenderer as FeatureRendererContext<PlayerEntityRenderState, PlayerEntityModel>
+					entityRenderer as FeatureRendererContext<AbstractClientPlayerEntity, PlayerEntityModel<AbstractClientPlayerEntity>>
 
 				registrationHelper.register(HexCapeFeatureRenderer(playerRenderer, context))
 			}
