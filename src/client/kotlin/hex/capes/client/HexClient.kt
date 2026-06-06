@@ -47,8 +47,8 @@ object HexClient : ClientModInitializer {
 									Text.literal(HexServers.catalogurl)
 										.styled {
 											it.withColor(Formatting.RED)
-												.withClickEvent(ClickEvent.OpenUrl(URI.create("${HexServers.catalogurl}/update")))
-												.withHoverEvent(HoverEvent.ShowText(Text.literal("Click to open link")))
+												.withClickEvent(ClickEvent(ClickEvent.Action.OPEN_URL, "${HexServers.catalogurl}/update"))
+												.withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("Click to open link")))
 										}
 								),
 							false
@@ -62,8 +62,8 @@ object HexClient : ClientModInitializer {
 									Text.literal(HexServers.catalogurl)
 										.styled {
 											it.withColor(Formatting.YELLOW)
-												.withClickEvent(ClickEvent.OpenUrl(URI.create(HexServers.catalogurl)))
-												.withHoverEvent(HoverEvent.ShowText(Text.literal("Click to open link")))
+												.withClickEvent(ClickEvent(ClickEvent.Action.OPEN_URL, HexServers.catalogurl))
+												.withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("Click to open link")))
 										}
 								),
 							false
@@ -129,7 +129,7 @@ object HexClient : ClientModInitializer {
 		}
 
 		LivingEntityFeatureRendererRegistrationCallback.EVENT.register { _, entityRenderer, registrationHelper, context ->
-			if (entityRenderer is PlayerEntityRenderer<*>) {
+			if (entityRenderer is PlayerEntityRenderer) {
 				@Suppress("UNCHECKED_CAST")
 				val playerRenderer =
 					entityRenderer as FeatureRendererContext<PlayerEntityRenderState, PlayerEntityModel>

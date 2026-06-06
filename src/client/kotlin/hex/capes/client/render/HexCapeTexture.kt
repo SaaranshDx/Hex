@@ -278,7 +278,7 @@ object HexCapeTexture {
                 client.textureManager.destroyTexture(entry.textureId)
                 client.textureManager.registerTexture(
                     entry.textureId,
-                    NativeImageBackedTexture({ "hex_cape_${entry.cacheKey}" }, bakedImage)
+                    NativeImageBackedTexture(bakedImage)
                 )
                 entry.registered = true
                 entry.diskLoadPending.set(false)
