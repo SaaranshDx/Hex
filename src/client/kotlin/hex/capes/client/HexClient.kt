@@ -88,14 +88,12 @@ object HexClient : ClientModInitializer {
 						context.source.sendFeedback(Text.literal("Reloading cache... this may take a few moments"))
 						Thread {
 							HexServers.reloadAll()
-							if (player != null) {
-								val name = player.name.string
-								HexServers.fetchPlayerRegistrationState(name)
-								if (HexServers.playerRegistrationState) {
-									HexCapeTexture.queueRefresh(name, force = true)
-								}
-								HexCapeTexture.reloadAll(forceRefresh = true)
+							val name = player.name.string
+							HexServers.fetchPlayerRegistrationState(name)
+							if (HexServers.playerRegistrationState) {
+								HexCapeTexture.queueRefresh(name, force = true)
 							}
+							HexCapeTexture.reloadAll(forceRefresh = true)
 							context.source.client.execute {
 								context.source.sendFeedback(Text.literal("Reloaded cache."))
 							}
